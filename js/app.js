@@ -403,12 +403,12 @@ App.GreetingWidget = (function () {
     return 'Good Night';        // Requirement 2.4
   }
 
-  /**
-   * Build the full greeting string for a given name.
-   *
-   * @param {string} userName
-   * @returns {string}  e.g. "Good Morning, Alice"
-   */
+  /** Returns the greeting string for the current time of day. */
+
+
+
+
+
   function _buildGreeting() {
     return getGreetingPrefix(new Date().getHours());
   }
@@ -416,16 +416,16 @@ App.GreetingWidget = (function () {
   /**
    * Initialise the GreetingWidget inside the given container element.
    *
-   * On load:
-   *   - Reads "dashboard_username" via StorageManager.get; defaults to "Friend"
-   *     if null (Requirement 2.5, 2.7).
-   *   - Renders the greeting text into #greeting-text (Requirement 2.1–2.4).
-   *
-   * Name input + Save button:
-   *   - On submit, trims the value, persists via StorageManager.set, and
-   *     updates the greeting display within 100 ms (Requirement 2.6).
-   *   - If StorageManager.set returns false, displays an inline role="alert"
-   *     error and retains the previously displayed name (Requirement 2.8).
+
+
+
+
+
+
+
+
+
+
    *
    * @param {HTMLElement} containerEl - the element that wraps the greeting UI
    *
@@ -437,12 +437,8 @@ App.GreetingWidget = (function () {
     }
 
     var greetingEl  = containerEl.querySelector('#greeting-text');
-
-    // Load saved name on init (Requirement 2.7)
-    var saved = App.StorageManager.get('dashboard_username');
-    var initialName = (saved !== null && saved !== undefined) ? saved : 'Friend'; // Requirement 2.5
     if (greetingEl) {
-      greetingEl.textContent = _buildGreeting(initialName);
+      greetingEl.textContent = _buildGreeting();
     }
   }
 
@@ -806,6 +802,331 @@ App.isValidDuration = App.FocusTimerWidget.isValidDuration;
 App.TimerState      = App.FocusTimerWidget.TimerState;
 
 
+
+/* ==========================================================================
+   TASK WIDGET
+   Manages a persisted to-do list with add, complete-toggle, delete, and sort.
+
+   localStorage key: "dashboard_tasks"
+   Each task object: { id, text, completed, createdAt }
+   ========================================================================== */
+
+App.TaskWidget = (function () {
+  'use strict';
+
+  var STORAGE_KEY = 'dashboard_tasks';
+
+  // In-memory task array — source of truth for rendering
+  var _tasks = [];
+
+  /** Load tasks from localStorage. */
+  function _load() {
+    var stored = App.StorageManager.get(STORAGE_KEY);
+    _tasks = Array.isArray(stored) ? stored : [];
+  }
+
+  /** Persist current _tasks to localStorage. */
+  function _save() {
+    App.StorageManager.set(STORAGE_KEY, _tasks);
+  }
+
+  /** Generate a simple unique ID. */
+  function _uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  /**
+   * Sort _tasks according to the current sort mode.
+   * Does NOT mutate _tasks — returns a new sorted array.
+   * @param {string} mode
+   * @returns {Array}
+   */
+  function _sorted(mode) {
+    var arr = _tasks.slice();
+    if (mode === 'active-first') {
+      arr.sort(function (a, b) { return Number(a.completed) - Number(b.completed); });
+    } else if (mode === 'completed-first') {
+      arr.sort(function (a, b) { return Number(b.completed) - Number(a.completed); });
+    } else if (mode === 'alpha-asc') {
+      arr.sort(function (a, b) { return a.text.localeCompare(b.text); });
+    } else {
+      // 'creation' (default) — oldest first
+      arr.sort(function (a, b) { return a.createdAt - b.createdAt; });
+    }
+    return arr;
+  }
+
+  /**
+   * Initialise the TaskWidget inside the given container element.
+   * @param {HTMLElement} containerEl
+   */
+  function init(containerEl) {
+    if (!containerEl) { return; }
+
+    var inputEl  = containerEl.querySelector('#task-input');
+    var addBtn   = containerEl.querySelector('#task-add');
+    var listEl   = containerEl.querySelector('#task-list');
+    var sortEl   = containerEl.querySelector('#task-sort');
+    var errorEl  = containerEl.querySelector('#task-error');
+
+    _load();
+
+    /* -- Helpers ----------------------------------------------------- */
+
+    function _showError(msg) {
+      if (!errorEl) { return; }
+      if (msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      } else {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+      }
+    }
+
+    function _render() {
+      if (!listEl) { return; }
+      var mode = sortEl ? sortEl.value : 'creation';
+      var sorted = _sorted(mode);
+      listEl.innerHTML = '';
+
+      sorted.forEach(function (task) {
+        var li = document.createElement('li');
+        li.className = 'flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors';
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.completed;
+        checkbox.className = 'w-4 h-4 accent-indigo-500 cursor-pointer flex-shrink-0';
+        checkbox.setAttribute('aria-label', 'Mark "' + task.text + '" as ' + (task.completed ? 'active' : 'complete'));
+        checkbox.addEventListener('change', function () {
+          _toggleComplete(task.id);
+        });
+
+        var span = document.createElement('span');
+        span.className = 'flex-1 text-sm text-gray-800 dark:text-gray-100' + (task.completed ? ' line-through text-gray-400 dark:text-gray-500' : '');
+        span.textContent = task.text;
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'flex-shrink-0 px-3 py-1 rounded-md bg-red-500 text-white text-xs font-semibold cursor-pointer hover:bg-red-600 active:scale-95 transition-all';
+        delBtn.textContent = 'Delete';
+        delBtn.setAttribute('aria-label', 'Delete "' + task.text + '"');
+        delBtn.addEventListener('click', function () {
+          _deleteTask(task.id);
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
+      });
+    }
+
+    /* -- Actions ----------------------------------------------------- */
+
+    function _addTask() {
+      if (!inputEl) { return; }
+      var text = inputEl.value.trim();
+      if (!text) {
+        _showError('Please enter a task description.');
+        inputEl.focus();
+        return;
+      }
+      var isDuplicate = _tasks.some(function (t) {
+        return t.text.toLowerCase() === text.toLowerCase();
+      });
+      if (isDuplicate) {
+        _showError('"' + text + '" sudah ada dalam daftar task.');
+        inputEl.focus();
+        return;
+      }
+      _showError(null);
+      _tasks.push({ id: _uid(), text: text, completed: false, createdAt: Date.now() });
+      _save();
+      _render();
+      inputEl.value = '';
+    }
+
+    function _toggleComplete(id) {
+      _tasks = _tasks.map(function (t) {
+        return t.id === id ? { id: t.id, text: t.text, completed: !t.completed, createdAt: t.createdAt } : t;
+      });
+      _save();
+      _render();
+    }
+
+    function _deleteTask(id) {
+      _tasks = _tasks.filter(function (t) { return t.id !== id; });
+      _save();
+      _render();
+    }
+
+    /* -- Wire events ------------------------------------------------- */
+
+    if (addBtn) { addBtn.addEventListener('click', _addTask); }
+    if (inputEl) {
+      inputEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { _addTask(); }
+      });
+    }
+    if (sortEl) { sortEl.addEventListener('change', _render); }
+
+    // Initial render
+    _render();
+  }
+
+  return { init: init };
+}());
+
+
+/* ==========================================================================
+   QUICK LINKS WIDGET
+   Manages a list of user-defined bookmarks (label + URL).
+
+   localStorage key: "dashboard_links"
+   Each link object: { id, label, url }
+   ========================================================================== */
+
+App.QuickLinksWidget = (function () {
+  'use strict';
+
+  var STORAGE_KEY = 'dashboard_links';
+  var _links = [];
+
+  function _load() {
+    var stored = App.StorageManager.get(STORAGE_KEY);
+    _links = Array.isArray(stored) ? stored : [];
+  }
+
+  function _save() {
+    App.StorageManager.set(STORAGE_KEY, _links);
+  }
+
+  function _uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function _isValidUrl(str) {
+    try {
+      var u = new URL(str);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function init(containerEl) {
+    if (!containerEl) { return; }
+
+    var labelInput = containerEl.querySelector('#link-label-input');
+    var urlInput   = containerEl.querySelector('#link-url-input');
+    var addBtn     = containerEl.querySelector('#link-add');
+    var listEl     = containerEl.querySelector('#links-list');
+    var errorEl    = containerEl.querySelector('#link-error');
+
+    _load();
+
+    /* -- Error helper ------------------------------------------------ */
+
+    function _showError(msg) {
+      if (!errorEl) { return; }
+      if (msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      } else {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+      }
+    }
+
+    /* -- Render ------------------------------------------------------- */
+
+    function _render() {
+      if (!listEl) { return; }
+      listEl.innerHTML = '';
+
+      if (_links.length === 0) {
+        var empty = document.createElement('p');
+        empty.className = 'text-sm text-gray-400 dark:text-gray-500';
+        empty.textContent = 'No links yet. Add one above.';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      _links.forEach(function (link) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800';
+
+        var anchor = document.createElement('a');
+        anchor.href = link.url;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.className = 'flex-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline truncate';
+        anchor.textContent = link.label || link.url;
+        anchor.setAttribute('title', link.url);
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'flex-shrink-0 px-3 py-1 rounded-md bg-red-500 text-white text-xs font-semibold cursor-pointer hover:bg-red-600 active:scale-95 transition-all';
+        delBtn.textContent = 'Delete';
+        delBtn.setAttribute('aria-label', 'Delete link "' + (link.label || link.url) + '"');
+        delBtn.addEventListener('click', function () {
+          _links = _links.filter(function (l) { return l.id !== link.id; });
+          _save();
+          _render();
+        });
+
+        wrapper.appendChild(anchor);
+        wrapper.appendChild(delBtn);
+        listEl.appendChild(wrapper);
+      });
+    }
+
+    /* -- Add link ----------------------------------------------------- */
+
+    function _addLink() {
+      var label = labelInput ? labelInput.value.trim() : '';
+      var url   = urlInput  ? urlInput.value.trim()   : '';
+
+      if (!url) {
+        _showError('Please enter a URL.');
+        if (urlInput) { urlInput.focus(); }
+        return;
+      }
+      if (!_isValidUrl(url)) {
+        _showError('Please enter a valid URL starting with http:// or https://');
+        if (urlInput) { urlInput.focus(); }
+        return;
+      }
+      var isDuplicate = _links.some(function (l) { return l.url === url; });
+      if (isDuplicate) {
+        _showError('"' + url + '" sudah ada dalam daftar link.');
+        if (urlInput) { urlInput.focus(); }
+        return;
+      }
+
+      _showError(null);
+      _links.push({ id: _uid(), label: label || url, url: url });
+      _save();
+      _render();
+      if (labelInput) { labelInput.value = ''; }
+      if (urlInput)   { urlInput.value = ''; }
+    }
+
+    /* -- Wire events -------------------------------------------------- */
+
+    if (addBtn) { addBtn.addEventListener('click', _addLink); }
+    if (urlInput) {
+      urlInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { _addLink(); }
+      });
+    }
+
+    _render();
+  }
+
+  return { init: init };
+}());
+
 /* ==========================================================================
    APP INIT
    Wires all widgets together on DOMContentLoaded.
@@ -852,6 +1173,18 @@ App.init = function () {
   var timerContainer = document.getElementById('timer-container');
   if (timerContainer) {
     App.FocusTimerWidget.init(timerContainer);
+  }
+
+  // Initialise TaskWidget
+  var tasksContainer = document.getElementById('tasks-container');
+  if (tasksContainer) {
+    App.TaskWidget.init(tasksContainer);
+  }
+
+  // Initialise QuickLinksWidget
+  var linksContainer = document.getElementById('links-container');
+  if (linksContainer) {
+    App.QuickLinksWidget.init(linksContainer);
   }
 
   // Additional widget initialisation calls will be added in subsequent tasks.
