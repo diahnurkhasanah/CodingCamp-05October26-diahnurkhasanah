@@ -1,0 +1,415 @@
+/* ==========================================================================
+   style.css — To-Do List Life Dashboard
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS Custom Properties — Light theme (default)
+   -------------------------------------------------------------------------- */
+:root {
+  --color-bg-page: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color-card: #ffffff;
+  --color-accent: #5c6bc0;
+  --color-text-primary: #1a202c;
+  --color-text-secondary: #718096;
+  --color-danger: #e53e3e;
+  --color-border: #e2e8f0;
+  --radius-card: 12px;
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark theme overrides — applied via data-theme="dark" on <html> */
+:root[data-theme="dark"] {
+  --color-card: #1e2432;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #a0aec0;
+  --color-border: #2d3748;
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset / Base styles
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   3. Layout
+   -------------------------------------------------------------------------- */
+.dashboard-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header-card,
+.full-width-card {
+  background: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  border: 1px solid var(--color-border);
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  border: 1px solid var(--color-border);
+}
+
+/* --------------------------------------------------------------------------
+   4. Widget styles
+   -------------------------------------------------------------------------- */
+
+/* Clock */
+.clock-display {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.clock-date {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+/* Greeting */
+.greeting-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-top: 12px;
+}
+
+/* Timer */
+.timer-display {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums; /* prevent layout shift as digits change */
+  transition: color 0.2s ease;
+}
+
+/* Completion state: flash accent to draw attention */
+.timer-display--finished {
+  color: var(--color-accent);
+  animation: timer-pulse 0.6s ease-in-out 3;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.timer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Start button variant — uses btn-primary styling */
+#timer-start {
+  min-width: 72px;
+}
+
+/* Stop / Reset share btn-secondary; keep same min-width for visual balance */
+#timer-stop,
+#timer-reset {
+  min-width: 72px;
+}
+
+/* Tasks */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-item__text {
+  flex: 1;
+  color: var(--color-text-primary);
+}
+
+.task-item--completed .task-item__text {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+}
+
+/* Quick links */
+.quick-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.quick-link-btn:hover,
+.quick-link-btn:focus-visible {
+  opacity: 0.85;
+}
+
+.quick-link-btn__delete {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.quick-link-btn__delete:hover,
+.quick-link-btn__delete:focus-visible {
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   5. Form controls
+   -------------------------------------------------------------------------- */
+input[type="text"],
+input[type="url"],
+input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-card);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+input[type="number"]:focus {
+  border-color: var(--color-accent);
+}
+
+.btn-primary {
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  opacity: 0.85;
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--color-text-secondary);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  opacity: 0.85;
+}
+
+.btn-danger {
+  padding: 6px 12px;
+  background: var(--color-danger);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: opacity 0.15s ease;
+}
+
+.btn-danger:hover,
+.btn-danger:focus-visible {
+  opacity: 0.85;
+}
+
+.validation-error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   6. Theme toggle
+   -------------------------------------------------------------------------- */
+
+/**
+ * .theme-toggle — fixed-position button that switches between light and dark.
+ *
+ * Accessibility:
+ *   - aria-label is set dynamically by ThemeManager to describe the *target*
+ *     state ("Switch to dark theme" / "Switch to light theme").
+ *   - Keyboard activation works natively because it is a <button> element
+ *     (Enter and Space both fire the click event).
+ *   - :focus-visible ring ensures keyboard users can see focus.
+ */
+.theme-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+  padding: 0;
+
+  background: var(--color-card);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  box-shadow: var(--shadow-card);
+
+  font-size: 1.375rem; /* emoji icon size */
+  line-height: 1;
+
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Active press feedback */
+.theme-toggle:active {
+  transform: scale(0.96);
+}
+
+/* --------------------------------------------------------------------------
+   6a. Storage warning banner
+   -------------------------------------------------------------------------- */
+.storage-warning-banner {
+  background: #f6e05e;
+  color: #744210;
+  text-align: center;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+/* --------------------------------------------------------------------------
+   7. Responsive overrides
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .clock-display {
+    font-size: 2.25rem;
+  }
+
+  .timer-display {
+    font-size: 2rem;
+  }
+
+  .dashboard-container {
+    padding: 16px 12px;
+  }
+}

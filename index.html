@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Dashboard</title>
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!--
+      Inline theme script — MUST run synchronously before </head> so the
+      data-theme attribute is set before any painting occurs, preventing FOUC.
+      This duplicates the logic in ThemeManager.applyInitial() intentionally.
+    -->
+    <script>
+      (function () {
+        var STORAGE_KEY = 'dashboard_theme';
+        var VALID = ['light', 'dark'];
+        var theme = 'light';
+        try {
+          var stored = localStorage.getItem(STORAGE_KEY);
+          if (VALID.indexOf(stored) !== -1) {
+            theme = stored;
+          }
+        } catch (e) {
+          // localStorage unavailable — default to light
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Header card: clock + greeting -->
+      <header class="header-card" id="clock-container">
+        <div class="clock-display" id="clock-time">--:--:--</div>
+        <div class="clock-date" id="clock-date"></div>
+        <div id="greeting-container">
+          <p class="greeting-text" id="greeting-text">Good day, Friend</p>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <input
+              type="text"
+              id="username-input"
+              placeholder="Your name"
+              maxlength="100"
+              style="max-width:200px;"
+              aria-label="Enter your name"
+            />
+            <button class="btn-primary" id="username-save">Save</button>
+          </div>
+          <p
+            class="validation-error"
+            id="username-error"
+            role="alert"
+            style="display:none;"
+          ></p>
+        </div>
+      </header>
+
+      <!-- 2-column main grid: timer + tasks -->
+      <div class="main-grid">
+        <!-- Focus Timer -->
+        <div class="card" id="timer-container">
+          <h2 style="margin-bottom:12px;color:var(--color-text-primary);">Focus Timer</h2>
+          <div class="timer-display" id="timer-display">25:00</div>
+          <div class="timer-controls" id="timer-controls">
+            <button class="btn-primary" id="timer-start">Start</button>
+            <button class="btn-secondary" id="timer-stop">Stop</button>
+            <button class="btn-secondary" id="timer-reset">Reset</button>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+            <input
+              type="number"
+              id="timer-duration-input"
+              min="1"
+              max="120"
+              placeholder="1–120 min"
+              style="max-width:120px;"
+              aria-label="Custom timer duration in minutes"
+            />
+            <button class="btn-secondary" id="timer-duration-save" aria-label="Save duration">✓</button>
+          </div>
+          <p
+            class="validation-error"
+            id="timer-error"
+            role="alert"
+            style="display:none;"
+          ></p>
+          <p
+            id="timer-complete-msg"
+            role="alert"
+            style="display:none;color:var(--color-accent);font-weight:600;margin-top:8px;"
+          >
+            ✅ Session complete!
+          </p>
+        </div>
+
+        <!-- Task list -->
+        <div class="card" id="tasks-container">
+          <h2 style="margin-bottom:12px;color:var(--color-text-primary);">Tasks</h2>
+          <div style="display:flex;gap:8px;">
+            <input
+              type="text"
+              id="task-input"
+              placeholder="Add a task…"
+              maxlength="200"
+              aria-label="New task description"
+            />
+            <button class="btn-primary" id="task-add">Add</button>
+          </div>
+          <p
+            class="validation-error"
+            id="task-error"
+            role="alert"
+            style="display:none;"
+          ></p>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+            <label for="task-sort" style="font-size:0.875rem;color:var(--color-text-secondary);">Sort:</label>
+            <select id="task-sort" aria-label="Sort tasks">
+              <option value="creation">By Creation Date</option>
+              <option value="active-first">Active First</option>
+              <option value="completed-first">Completed First</option>
+              <option value="alpha-asc">Alphabetical (A–Z)</option>
+            </select>
+          </div>
+          <ul class="task-list" id="task-list" aria-label="Task list"></ul>
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <section class="full-width-card" id="links-container">
+        <h2 style="margin-bottom:12px;color:var(--color-text-primary);">Quick Links</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input
+            type="text"
+            id="link-label-input"
+            placeholder="Label"
+            maxlength="50"
+            style="max-width:160px;"
+            aria-label="Link label"
+          />
+          <input
+            type="url"
+            id="link-url-input"
+            placeholder="https://…"
+            maxlength="2048"
+            style="max-width:320px;"
+            aria-label="Link URL"
+          />
+          <button class="btn-primary" id="link-add">Add Link</button>
+        </div>
+        <p
+          class="validation-error"
+          id="link-error"
+          role="alert"
+          style="display:none;"
+        ></p>
+        <div class="quick-links-list" id="links-list" aria-label="Quick links"></div>
+      </section>
+    </div>
+
+    <!--
+      Theme toggle button — fixed bottom-right.
+      aria-label is set dynamically by App.init() via ThemeManager.
+    -->
+    <button
+      class="theme-toggle"
+      id="theme-toggle"
+      type="button"
+      aria-label="Switch to dark theme"
+    >
+      🌙
+    </button>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
