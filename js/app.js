@@ -409,8 +409,8 @@ App.GreetingWidget = (function () {
    * @param {string} userName
    * @returns {string}  e.g. "Good Morning, Alice"
    */
-  function _buildGreeting(userName) {
-    return getGreetingPrefix(new Date().getHours()) + ', ' + userName;
+  function _buildGreeting() {
+    return getGreetingPrefix(new Date().getHours());
   }
 
   /**
@@ -437,84 +437,12 @@ App.GreetingWidget = (function () {
     }
 
     var greetingEl  = containerEl.querySelector('#greeting-text');
-    var inputEl     = containerEl.querySelector('#username-input');
-    var saveBtn     = containerEl.querySelector('#username-save');
-    var errorEl     = containerEl.querySelector('#username-error');
 
-    // Tracks the name currently shown in the greeting so we can restore it on
-    // a save failure (Requirement 2.8).
-    var currentName;
-
-    /**
-     * Push a new name into the greeting text element.
-     * @param {string} name
-     */
-    function _renderGreeting(name) {
-      if (greetingEl) {
-        greetingEl.textContent = _buildGreeting(name);
-      }
-      currentName = name;
-    }
-
-    /**
-     * Show or hide the inline error element.
-     * @param {string|null} message - pass null to hide
-     */
-    function _setError(message) {
-      if (!errorEl) {
-        return;
-      }
-      if (message) {
-        errorEl.textContent = message;
-        errorEl.style.display = '';
-      } else {
-        errorEl.textContent = '';
-        errorEl.style.display = 'none';
-      }
-    }
-
-    // --- Load saved name on init (Requirement 2.7) ---
+    // Load saved name on init (Requirement 2.7)
     var saved = App.StorageManager.get('dashboard_username');
     var initialName = (saved !== null && saved !== undefined) ? saved : 'Friend'; // Requirement 2.5
-    _renderGreeting(initialName);
-
-    // --- Wire Save button (Requirement 2.6) ---
-    function _handleSave() {
-      if (!inputEl) {
-        return;
-      }
-
-      var trimmed = inputEl.value.trim();
-
-      // Use "Friend" when the input is cleared/empty (keeps a valid display)
-      var nameToSave = trimmed.length > 0 ? trimmed : 'Friend';
-
-      var ok = App.StorageManager.set('dashboard_username', nameToSave);
-
-      if (ok) {
-        // Update the greeting within 100 ms (synchronous — well under the limit)
-        _renderGreeting(nameToSave);
-        _setError(null);
-        // Clear input after successful save
-        inputEl.value = '';
-      } else {
-        // Save failed — show error and retain previously displayed name (Requirement 2.8)
-        _setError('Could not save your name. Storage may be full or unavailable.');
-        // currentName is unchanged, so the displayed greeting is still correct
-      }
-    }
-
-    if (saveBtn) {
-      saveBtn.addEventListener('click', _handleSave);
-    }
-
-    // Also allow submitting via Enter key in the input field
-    if (inputEl) {
-      inputEl.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-          _handleSave();
-        }
-      });
+    if (greetingEl) {
+      greetingEl.textContent = _buildGreeting(initialName);
     }
   }
 
